@@ -48,33 +48,47 @@ var to = new web3_js_1.PublicKey("7sCXq3U28U2R9XNtnzfXCXUhLidRdfsgwt6gtFytRL33")
 //Create a Solana devnet connection
 var connection = new web3_js_1.Connection("https://api.devnet.solana.com");
 (function () { return __awaiter(void 0, void 0, void 0, function () {
-    var transaction, _a, signature, e_1;
+    var balance, transaction, _a, fee, signature, e_1;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                _b.trys.push([0, 3, , 4]);
+                _b.trys.push([0, 5, , 6]);
+                return [4 /*yield*/, connection.getBalance(from.publicKey)];
+            case 1:
+                balance = _b.sent();
                 transaction = new web3_js_1.Transaction().add(web3_js_1.SystemProgram.transfer({
                     fromPubkey: from.publicKey,
                     toPubkey: to,
-                    lamports: web3_js_1.LAMPORTS_PER_SOL / 100,
+                    lamports: balance,
                 }));
                 _a = transaction;
                 return [4 /*yield*/, connection.getLatestBlockhash("confirmed")];
-            case 1:
+            case 2:
                 _a.recentBlockhash = (_b.sent()).blockhash;
                 transaction.feePayer = from.publicKey;
+                return [4 /*yield*/, connection.getFeeForMessage(transaction.compileMessage(), "confirmed")];
+            case 3:
+                fee = (_b.sent()).value || 0;
+                // Remove our transfer instruction to replace it
+                transaction.instructions.pop();
+                // Now add the instruction back with correct amount of lamports
+                transaction.add(web3_js_1.SystemProgram.transfer({
+                    fromPubkey: from.publicKey,
+                    toPubkey: to,
+                    lamports: balance - fee,
+                }));
                 return [4 /*yield*/, (0, web3_js_1.sendAndConfirmTransaction)(connection, transaction, [
                         from,
                     ])];
-            case 2:
+            case 4:
                 signature = _b.sent();
-                console.log("Success! Check out your TX here:\n        https://explorer.solana.com/tx/".concat(signature, "?cluster=devnet"));
-                return [3 /*break*/, 4];
-            case 3:
+                console.log("Success! Check out your TX here: https://explorer.solana.com/tx/".concat(signature, "?cluster=devnet"));
+                return [3 /*break*/, 6];
+            case 5:
                 e_1 = _b.sent();
                 console.error("Oops, something went wrong: ".concat(e_1));
-                return [3 /*break*/, 4];
-            case 4: return [2 /*return*/];
+                return [3 /*break*/, 6];
+            case 6: return [2 /*return*/];
         }
     });
 }); })();
